@@ -4,6 +4,22 @@ The Layer7 API Developer Portal (API Portal) is part of the Layer7 API Managemen
 ## Introduction
 This Chart deploys the Layer7 API Developer Portal on a Kubernetes Cluster using the Helm Package Manager.
 
+## 2.2.7 General Updates
+- This new version of the chart supports API Portal 5.1.2.
+
+## 2.2.6 General Updates
+- This new version of the chart to parametrize imagePullPolicy for all three portal jobs: db-upgrade-portal, db-upgrade-rbac and cert-upgrade.
+- Fixing bitnami repository dependency issue.
+
+## 2.2.5 General Updates
+- This new version of the chart supports API Portal 5.1.1 to support internal SaaS only release.
+
+## 2.2.4 General Updates
+- Removed pssg related environment variables from portal-enterprise and portal-data containers.
+
+## 2.2.2 General Updates
+- The minimum and maximum memory limit of PSSG was increased as the underlying service is a Gateway that was upgraded to version 10.1 CR1.
+
 ## 2.2.0 General Updates
 - This new version of the chart supports API Portal 5.1.
 - NGINX-Ingress Subchart is upgraded to version 4.0.9 to support K8s 1.22+ version.
@@ -70,7 +86,7 @@ To delete API Portal installation, run the following command:
  $ helm delete <release name>
 ```
 
-*Manually clean up additional resources such as PVCs and Secrets. This protects your data if deleted accidentally.* 
+*Manually clean up additional resources such as PVCs and Secrets. This protects your data if deleted accidentally.*
 
 ## Upgrade External Portal Database to MySQL 8.0
 MySQL 8.0 is supported as an external database starting from API Portal 5.0 CR-1. This section helps you understand the overall process of upgrading an existing Portal database running MySQL 5.7 to MySQL 8.0.
@@ -121,6 +137,10 @@ Install the chart again
 * [Create New Tenant](../../utils)
 * [Persistent Volumes](#persistent-volumes)
 * [Troubleshooting](#troubleshooting)
+* [Portal TLS Defaults](#portal-tls-defaults)
+* [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)
+* [Portal Request XSS Filter](#portal-request-xss-filter)
+
 
 # Configuration
 This section describes configurable parameters in **values.yaml**, there is also ***production-values.yaml*** that represents the minimum recommended configuration for deploying the Portal with analytics (if enabled) and core services in an HA, fault tolerant configuration.
@@ -167,7 +187,6 @@ This section describes configurable parameters in **values.yaml**, there is also
 | `portal.ssoDebug` | SSO Debugging | `false` |
 | `portal.hostnameWhiteList` | Hostname whitelist | `` |
 | `portal.defaultTenantId` | **Important!** Do not change the default tenant ID unless you have been using a different tenant ID in your previous install/deployment. There is a 15 character limit. See [DNS Configuration](#dns-configuration) for tenant ID character limitations.  | `apim` |
-| `portal.jobsLabels` | A list of custom key: value labels applied to jobs | `not set` |
 | `portal.registryCredentials` | Used to create image pull secret, see prerequisites | `` |
 | `portal.useExistingPullSecret` | Configures Portal Deployment to use **global.pullSecret** as imagePullSecret | `false` |
 | `portal.imagePullSecret.enabled` | Configures Portal Deployment to use custom registry, this option is only evaluated only when portal.registryCredentials option is not used | `false` |
@@ -239,6 +258,18 @@ This section describes configurable parameters in **values.yaml**, there is also
 | `apim.tolerations`                   | Pod tolerations for pod assignment                           | `{} evaluated as a template`                                 |
 | `apim.affinity`                      | Affinity for pod assignment                                  | `{} evaluated as a template`                                 |
 | `apim.additionalLabels`              | A list of custom key: value labels                           | `not set`                                                    |
+| `apim.additionalEnv.CONFIG_8443_TLS` | Enabled Port 8443 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled` see [Portal TLS Defaults](#portal-tls-defaults)                                                    |
+| `apim.additionalEnv.CONFIG_9443_TLS` | Enabled Port 9443 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled` see [Portal TLS Defaults](#portal-tls-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_9446_TLS` | Enabled Port 9446 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled` see [Portal TLS Defaults](#portal-tls-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_9448_TLS` | Enabled Port 9448 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled` see [Portal TLS Defaults](#portal-tls-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_9449_TLS` | Enabled Port 9449 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled` see [Portal TLS Defaults](#portal-tls-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_1885_TLS` | Enabled Port 1885 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled` see [Portal TLS Defaults](#portal-tls-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_8443_CIPHER_SUITE` | Enabled Port 8443 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_9443_CIPHER_SUITE` | Enabled Port 9443 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_9446_CIPHER_SUITE` | Enabled Port 9446 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_9448_CIPHER_SUITE` | Enabled Port 9448 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_9449_CIPHER_SUITE` | Enabled Port 9449 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `apim.additionalEnv.CONFIG_1885_CIPHER_SUITE` | Enabled Port 1885 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
 | `authenticator.forceRedeploy`        | Force redeployment during helm upgrade whether there is a change or not | `false`                                                      |
 | `authenticator.replicaCount`         | Number of authenticator nodes                                | `1`                                                          |
 | `authenticator.javaOptions`          | Java Options to pass in                                      | `-Xms1g -Xmx1g`                                              |
@@ -260,6 +291,9 @@ This section describes configurable parameters in **values.yaml**, there is also
 | `dispatcher.readinessProbe`          | Readiness Probe for Dispatcher                               | `{} evaluated as a template` <br />`If not specfied, http get request on nginx status gets checked ` |
 | `dispatcher.livenessProbe`           | Liveness Probe for Dispatcher                                | `{} evaluated as a template` <br />`If not specfied, http get request on nginx status gets checked ` |
 | `dispatcher.additionalLabels`        | A list of custom key: value labels                           | `not set`                                                    |
+| `dispatcher.additionalEnv.CONFIG_HTTPS_TLS` | Enabled HTTPS TLS Versions                            | `If not specfied, Portal TLS defaults are enabled` see [Portal TLS Defaults](#portal-tls-defaults)                                                   |
+| `dispatcher.additionalEnv.CONFIG_HTTPS_CIPHER_SUITE` | Enabled HTTPS Cipher Suites                  | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `dispatcher.additionalEnv.CONFIG_HOST_ALLOWED_DOMAINS` |Use &#124; to separate allowed domains. e.g. mydomain1.com &#124; mydomain2.com| `not set`                                                   |
 | `portalData.forceRedeploy`           | Force redeployment during helm upgrade whether there is a change or not | `false`                                                      |
 | `portalData.replicaCount`            | Number of portal data nodes                                  | `1`                                                          |
 | `portalData.javaOptions`             | Java Options to pass in                                      | `-Xms2g -Xmx2g`                                              |
@@ -289,6 +323,16 @@ This section describes configurable parameters in **values.yaml**, there is also
 | `pssg.tolerations`                   | Pod tolerations for pod assignment                           | `{} evaluated as a template`                                 |
 | `pssg.affinity`                      | Affinity for pod assignment                                  | `{} evaluated as a template`                                 |
 | `pssg.additionalLabels`              | A list of custom key: value labels                           | `not set`                                                    |
+| `pssg.additionalEnv.CONFIG_8443_TLS` | Enabled Port 8443 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled.` see [Portal TLS Defaults](#portal-tls-defaults)                                                    |
+| `pssg.additionalEnv.CONFIG_9443_TLS` | Enabled Port 9443 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled`  see [Portal TLS Defaults](#portal-tls-defaults)                                                  |
+| `pssg.additionalEnv.CONFIG_9446_TLS` | Enabled Port 9446 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled`  see [Portal TLS Defaults](#portal-tls-defaults)                                                  |
+| `pssg.additionalEnv.CONFIG_9447_TLS` | Enabled Port 9447 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled`  see [Portal TLS Defaults](#portal-tls-defaults)                                                  |
+| `pssg.additionalEnv.CONFIG_9448_TLS` | Enabled Port 9448 TLS Versions                               | `If not specfied, Portal TLS defaults are enabled`  see [Portal TLS Defaults](#portal-tls-defaults)                                                  |
+| `pssg.additionalEnv.CONFIG_8443_CIPHER_SUITE` | Enabled Port 8443 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `pssg.additionalEnv.CONFIG_9443_CIPHER_SUITE` | Enabled Port 9443 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `pssg.additionalEnv.CONFIG_9446_CIPHER_SUITE` | Enabled Port 9446 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `pssg.additionalEnv.CONFIG_9447_CIPHER_SUITE` | Enabled Port 9447 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
+| `pssg.additionalEnv.CONFIG_9448_CIPHER_SUITE` | Enabled Port 9448 Cipher Suites                     | `If not specfied, Portal Cipher Suites defaults are enabled` see [Portal Cipher Suites Defaults](#portal-cipher-suites-defaults)                                                   |
 | `tenantProvisioner.forceRedeploy`    | Force redeployment during helm upgrade whether there is a change or not | `false`                                                      |
 | `tenantProvisioner.replicaCount`     | Number of tenant provisioner nodes                           | `1`                                                          |
 | `tenantProvisioner.javaOptions`      | Java Options to pass in                                      | `-Xms512m -Xmx512m`                                          |
@@ -299,6 +343,77 @@ This section describes configurable parameters in **values.yaml**, there is also
 | `tenantProvisioner.tolerations`      | Pod tolerations for pod assignment                           | `{} evaluated as a template`                                 |
 | `tenantProvisioner.affinity `        | Affinity for pod assignment                                  | `{} evaluated as a template`                                 |
 | `tenantProvisioner.additionalLabels` | A list of custom key: value labels                           | `not set`                                                    |
+| `jobs.nodeSelector`                  | Node labels for pod assignment                               | `{} evaluated as a template`                                 |
+| `jobs.tolerations`                   | Pod tolerations for pod assignment                           | `{} evaluated as a template`                                 |
+| `jobs.labels`                        | A list of custom key: value labels applied to jobs           | `not set`                                 |
+| `jobs.image.PullPolicy`              | Image pull policy applied to jobs                            | `IfNotPresent`                                 |
+
+### Portal TLS Defaults
+Portal TLS defaults if the parameters are not set.
+| Parameter                            | Description                                                  | Default                                                      |
+| ------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `apim.additionalEnv.CONFIG_8443_TLS` | APIM ingress Port 8443 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                     |
+| `apim.additionalEnv.CONFIG_9443_TLS` | APIM ingress Port 9443 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                    |
+| `apim.additionalEnv.CONFIG_9446_TLS` | APIM ingress Port 9446 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                    |
+| `apim.additionalEnv.CONFIG_9448_TLS` | APIM ingress Port 9448 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                    |
+| `apim.additionalEnv.CONFIG_9449_TLS` | APIM ingress Port 9449 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                    |
+| `apim.additionalEnv.CONFIG_1885_TLS` | APIM ingress Port 1885 TLS defaults if not specified                           | `TLSv1.2,TLSv1.3`                                                    |
+| `apim.additionalEnv.CONFIG_9449_TLS` | APIM ingress Port 9449 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                    |
+| `apim.additionalEnv.CONFIG_1885_TLS` | APIM ingress Port 1885 TLS defaults if not specified                           | `TLSv1.2,TLSv1.3`                                                    |
+| `dispatcher.additionalEnv.CONFIG_HTTPS_TLS` | Dispatcher HTTPS TLS defaults if not specified                            | `TLSv1.2,TLSv1.3`                                                    |
+| `pssg.additionalEnv.CONFIG_8443_TLS` | PSSG Port 8443 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                     |
+| `pssg.additionalEnv.CONFIG_9443_TLS` | PSSG Port 9443 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                    |
+| `pssg.additionalEnv.CONFIG_9446_TLS` | PSSG Port 9446 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                    |
+| `pssg.additionalEnv.CONFIG_9447_TLS` | PSSG Port 9447 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                    |
+| `pssg.additionalEnv.CONFIG_9448_TLS` | PSSG Port 9448 TLS defaults if not specified                          | `TLSv1.2,TLSv1.3`                                                    |
+
+## Portal Cipher Suites Defaults
+Portal Cipher Suites defaults if the parameters are not set.
+| Parameter                            | Description                                                  | Default                                                      |
+| ------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `apim.additionalEnv.CONFIG_8443_CIPHER_SUITE` | APIM ingress Port 8443 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256`                                                    |
+| `apim.additionalEnv.CONFIG_9443_CIPHER_SUITE` | APIM ingress Port 9443 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256`                                                    |
+| `apim.additionalEnv.CONFIG_9446_CIPHER_SUITE` | APIM ingress Port 9446 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_RC4_128_SHA,TLS_ECDH_RSA_WITH_RC4_128_SHA`                                                    |
+| `apim.additionalEnv.CONFIG_9448_CIPHER_SUITE` | APIM ingress Port 9448 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_RC4_128_SHA,TLS_ECDH_RSA_WITH_RC4_128_SHA`                                                    |
+| `apim.additionalEnv.CONFIG_9449_CIPHER_SUITE` | APIM ingress Port 9449 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_RC4_128_SHA,TLS_ECDH_RSA_WITH_RC4_128_SHA`                                                    |
+| `apim.additionalEnv.CONFIG_1885_CIPHER_SUITE` | APIM ingress Port 1885 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_RC4_128_SHA,TLS_ECDH_RSA_WITH_RC4_128_SHA`                                                    |
+| `dispatcher.additionalEnv.CONFIG_HTTPS_CIPHER_SUITE` | Dispatcher HTTPS Cipher Suites defaults if not specified      | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,ECDHE_RSA_AES128_GCM_SHA256,ECDHE_ECDSA_AES128_GCM_SHA256,ECDHE_RSA_AES256_GCM_SHA384,ECDHE_ECDSA_AES256_GCM_SHA384,DHE_RSA_AES128_GCM_SHA256,DHE_DSS_AES128_GCM_SHA256,kEDH+AESGCM,ECDH_RSA_AES128_SHA256,ECDHE_ECDSA_AES128_SHA256,ECDHE_ECDSA_AES128_SHA,ECDHE_ECDSA_AES256_SHA384,ECDHE_ECDSA_AES256_SHA,DES_RSA_AES128_SHA256,DHE_RSA_AES128_SHA,DHE_DSS_AES128_SHA256,DHE_RSA_AES256_SHA256,DHE_DSS_AES256_SHA,DHE_RSA_AES256_SHA,!aNULL,!eNULL,!EXPORT,!DES,!RC4,!3DES,!MD5,!PSK`                                                    |
+| `pssg.additionalEnv.CONFIG_8443_CIPHER_SUITE` | APIM ingress Port 8443 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_RSA_WITH_AES_256_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256`                                                    |
+| `pssg.additionalEnv.CONFIG_9443_CIPHER_SUITE` | APIM ingress Port 9443 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_RSA_WITH_AES_256_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256`                                                    |
+| `pssg.additionalEnv.CONFIG_9446_CIPHER_SUITE` | APIM ingress Port 9446 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_RC4_128_SHA,TLS_ECDH_RSA_WITH_RC4_128_SHA`                                                    |
+| `pssg.additionalEnv.CONFIG_9447_CIPHER_SUITE` | APIM ingress Port 9447 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_RC4_128_SHA,TLS_ECDH_RSA_WITH_RC4_128_SHA`                                                    |
+| `pssg.additionalEnv.CONFIG_9448_CIPHER_SUITE` | APIM ingress Port 9448 Cipher Suites defaults if not specified       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_RC4_128_SHA,TLS_ECDH_RSA_WITH_RC4_128_SHA`                                                    |
+
+### Portal Supported TLS Versions
+| Name                            | Description                                                  | Supported TLS Versions                                                      |
+| ------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `apim` | APIM ingress HTTPS/MQTT-TLS supported TLS Versions       | `TLSv1.0,TLSv1.1,TLSv1.2,TLSv1.3`                                                    |
+| `dispatcher` | Dispatcher HTTPS supported TLS Versions            | `TLSv1.0,TLSv1.1,TLSv1.2,TLSv1.3`                                                    |
+| `pssg` | PSSG HTTPS/MQTT-TLS supported TLS Versions               | `TLSv1.0,TLSv1.1,TLSv1.2,TLSv1.3`                                                    |
+
+### Portal Supported Cipher Suites
+| Name                            | Description                                                  | Supported TLS Versions                                                      |
+| ------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `apim` | APIM ingress HTTPS/MQTT-TLS supported Cipher Suites       | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA`                                                    |
+| `dispatcher` | Dispatcher HTTPS supported Cipher Suites            | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,ECDHE_RSA_AES128_GCM_SHA256,ECDHE_ECDSA_AES128_GCM_SHA256,ECDHE_RSA_AES256_GCM_SHA384,ECDHE_ECDSA_AES256_GCM_SHA384,DHE_RSA_AES128_GCM_SHA256,DHE_DSS_AES128_GCM_SHA256,kEDH+AESGCM,ECDH_RSA_AES128_SHA256,ECDHE_ECDSA_AES128_SHA256,ECDHE_ECDSA_AES128_SHA,ECDHE_ECDSA_AES256_SHA384,ECDHE_ECDSA_AES256_SHA,DES_RSA_AES128_SHA256,DHE_RSA_AES128_SHA,DHE_DSS_AES128_SHA256,DHE_RSA_AES256_SHA256,DHE_DSS_AES256_SHA,DHE_RSA_AES256_SHA,!aNULL,!eNULL,!EXPORT,!DES,!RC4,!3DES,!MD5,!PSK`                                                    |
+| `pssg` | PSSG HTTPS/MQTT-TLS supported Cipher Suites               | `TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA`                                                    |
+
+### Portal Request XSS Filter
+The value of this variable should contain rules for sanitizing malicious scripts
+that exist in a HTTP request.  The value must be zipped and base64 encoded.
+
+Run the following commands to create the zipped and base64 encoded value:
+```
+    $ zip output.zip your_policy_file.xml
+    $ cat output.zip | base64
+```
+Note: the output from base64 should not contain any line breaks.
+Take the base64 output and set it to the variable below and restart portal stack.
+
+| Environment Variable                                 | Description                                                                                                          |
+|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `portalData.additionalEnv.ANTISAMY_FILTER_POLICY`    | Zipped policy file in base64 encoded format|
+| `authenticator.additionalEnv.ANTISAMY_FILTER_POLICY` | Zipped policy file in base64 encoded format|
 
 
 ### RBAC Parameters
@@ -326,7 +441,7 @@ If RBAC is required and a set service account is in use, the following roles mus
 *batch-reader*
 - apiGroups: ["batch"]
   resources: ["jobs"]
-  verbs: ["get", "describe"]
+  verbs: ["get"]
 ...
 *cert-update*
 rules:
@@ -396,18 +511,18 @@ Portal Analytics
 ### Portal Images
 | Parameter                                 | Description                                                                                                          | Default                                                      |
 |-------------------------------------------|----------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
-| `image.dispatcher` | dispatcher image | `dispatcher:5.1` |
-| `image.pssg` | PSSG image | `pssg:5.1` |
-| `image.apim` | APIM ingress image | `ingress:5.1` |
-| `image.enterprise` | portal-enterprise image | `portal-enterprise:5.1` |
-| `image.data` | portal-data image | `portal-data:5.1` |
-| `image.tps` | tenant provisioner image | `tenant-provisioning-service:5.1` |
-| `image.analytics` | Analytics image | `analytics-server:5.1` |
-| `image.authenticator` | Authenticator image | `authenticator:5.1` |
-| `image.dbUpgrade` | db upgrade image | `db-upgrade-portal:5.1` |
-| `image.rbacUpgrade` | Analytics image, per Portal version | `db-upgrade-rbac:5.1` |
-| `image.upgradeVerify` | Upgrade verification image | `upgrade-verify:5.1` |
-| `image.tlsManager` | TLS manager image | `tls-automator:5.1` |
+| `image.dispatcher` | dispatcher image | `dispatcher:5.1.2` |
+| `image.pssg` | PSSG image | `pssg:5.1.2` |
+| `image.apim` | APIM ingress image | `ingress:5.1.2` |
+| `image.enterprise` | portal-enterprise image | `portal-enterprise:5.1.2` |
+| `image.data` | portal-data image | `portal-data:5.1.2` |
+| `image.tps` | tenant provisioner image | `tenant-provisioning-service:5.1.2` |
+| `image.analytics` | Analytics image | `analytics-server:5.1.2` |
+| `image.authenticator` | Authenticator image | `authenticator:5.1.2` |
+| `image.dbUpgrade` | db upgrade image | `db-upgrade-portal:5.1.2` |
+| `image.rbacUpgrade` | Analytics image, per Portal version | `db-upgrade-rbac:5.1.2` |
+| `image.upgradeVerify` | Upgrade verification image | `upgrade-verify:5.1.2` |
+| `image.tlsManager` | TLS manager image | `tls-automator:5.1.2` |
 
 ## Subcharts
 For Production, use an external MySQL Server.
@@ -497,16 +612,16 @@ The following table lists the configured parameters of the Druid Subchart:
 ## Druid Images
 The following table lists the configured parameters of the Druid Subchart
 
-| Parameter                        | Description                               | Default                                                      |
-| -----------------------------    | -----------------------------------       | -----------------------------------------------------------  |
-| `druid.image.zookeeper `                | Zookeeper image   | `zookeeper:5.1` |
-| `druid.image.broker`                | Broker image   | `druid:5.1` |
-| `druid.image.coordinator`                | Coordinator  | `druid:5.1` |
-| `druid.image.middlemanager`                | Middlemanager image   | `druid:5.1` 
-| `druid.image.minio`                | Minio image   | `minio:5.1` |
-| `druid.image.historical`                | Historical image   | `druid:5.1` |
-| `druid.image.kafka`                | Kafka image   | `kafka:5.1` |
-| `druid.image.ingestion`                | Ingestion image   | `ingestion-server:5.1` |
+| Parameter                   | Description         | Default                  |
+|-----------------------------|---------------------|--------------------------|
+| `druid.image.zookeeper `    | Zookeeper image     | `zookeeper:5.1.2`        |
+| `druid.image.broker`        | Broker image        | `druid:5.1.2`            |
+| `druid.image.coordinator`   | Coordinator         | `druid:5.1.2`            |
+| `druid.image.middlemanager` | Middlemanager image | `druid:5.1.2`            |
+| `druid.image.minio`         | Minio image         | `minio:5.1.2`            |
+| `druid.image.historical`    | Historical image    | `druid:5.1.2`            |
+| `druid.image.kafka`         | Kafka image         | `kafka:5.1.2`            |
+| `druid.image.ingestion`     | Ingestion image     | `ingestion-server:5.1.2` |
 
 ## RabbitMQ
 The following table lists the configured parameters of the Bitnami RabbitMQ Subchart - https://github.com/bitnami/charts/tree/master/bitnami/rabbitmq
@@ -515,7 +630,7 @@ The following table lists the configured parameters of the Bitnami RabbitMQ Subc
 | -----------------------------    | -----------------------------------       | -----------------------------------------------------------  |
 | `rabbitmq.enabled`                | Enable this subchart   | `true` |
 | `rabbitmq.host`                |  Host - must match fullnameOverride  | `rabbitmq` |
-| `rabbitmq.image.tag`    | RabbitMQ image version | `5.1` |
+| `rabbitmq.image.tag`    | RabbitMQ image version | `5.1.2` |
 | `rabbitmq.fullnameOverride`                | Overrides the name of the subchart   | `rabbitmq` |
 | `rabbitmq.serviceAccount.create`                | Enable creation of ServiceAccount for RabbitMQ    | `true` |
 | `rabbitmq.serviceAccount.name.`                | Name of the created serviceAccount | Generated using the `rabbitmq.fullname` template |
@@ -571,7 +686,7 @@ IngressClass resources are supported since k8s >= 1.18 and required since k8s >=
 
 ## DNS Configuration
 To access API Portal, configure the hostname resolution on your corporate DNS server.
-The hostnames must match the values that you enter in your **values.yaml**. 
+The hostnames must match the values that you enter in your **values.yaml**.
 
 > **IMPORTANT!** If you are migrating from a Docker Swarm deployment, utilize legacy hostnames to ensure continuity of business. For details, see [Migrate from Docker Swarm](../../utils/portal-migration/README.md).
 
@@ -581,11 +696,11 @@ API Portal requires the following hostnames to be resolvable:
 
 | Endpoint | Hostname | Legacy Hostname |
 | -------- | -------- | --------------- |
-| Default tenant homepage | `apim-<subdomainPrefix>.<domain>` | `apim.<domain>` | 
-| Ingress SSG | `<subdomainPrefix>-ssg.<domain>` | `ssg.<domain>` | 
-| Message broker | `<subdomainPrefix>-broker.<domain>` | `broker.<domain>` | 
-| TSSG enrollment | `<subdomainPrefix>-enroll.<domain>` | `enroll.<domain>` | 
-| TSSG sync | `<subdomainPrefix>-sync.<domain>` | `sync.<domain>` | 
+| Default tenant homepage | `apim-<subdomainPrefix>.<domain>` | `apim.<domain>` |
+| Ingress SSG | `<subdomainPrefix>-ssg.<domain>` | `ssg.<domain>` |
+| Message broker | `<subdomainPrefix>-broker.<domain>` | `broker.<domain>` |
+| TSSG enrollment | `<subdomainPrefix>-enroll.<domain>` | `enroll.<domain>` |
+| TSSG sync | `<subdomainPrefix>-sync.<domain>` | `sync.<domain>` |
 | API analytics | `<subdomainPrefix>-analytics.<domain>` | `analytics.<domain>` |
 
 ## Hostname Restrictions
@@ -607,11 +722,11 @@ Resulting hostnames:
 
 | Endpoint | Hostname | Legacy Hostname |
 | -------- | -------- | --------------- |
-| Default tenant homepage | `apim-dev-portal.example.com` | `apim.example.com` | 
-| Ingress SSG | `dev-portal-ssg.example.com` | `ssg.example.com` | 
-| Message broker | `dev-portal-broker.example.com` | `broker.example.com` | 
-| TSSG enrollment | `dev-portal-enroll.example.com` | `enroll.example.com` | 
-| TSSG sync | `dev-portal-sync.example.com` | `sync.example.com` | 
+| Default tenant homepage | `apim-dev-portal.example.com` | `apim.example.com` |
+| Ingress SSG | `dev-portal-ssg.example.com` | `ssg.example.com` |
+| Message broker | `dev-portal-broker.example.com` | `broker.example.com` |
+| TSSG enrollment | `dev-portal-enroll.example.com` | `enroll.example.com` |
+| TSSG sync | `dev-portal-sync.example.com` | `sync.example.com` |
 | API analytics | `dev-portal-analytics.example.com` | `analytics.example.com` |
 
 ## Persistent Volumes
@@ -621,7 +736,7 @@ With the deployment of API Portal, PersistentVolumeClaims (PVC) are created for 
 
 Analytics components:
 
-- Kafka - Responsible to stream analytics data to druid cluster. Ingestion server streams data to Kafka, which is then ingested into druid processes. If druid containers are not available, Kafka also acts as a message store and retains analytics data up to 6hrs. 
+- Kafka - Responsible to stream analytics data to druid cluster. Ingestion server streams data to Kafka, which is then ingested into druid processes. If druid containers are not available, Kafka also acts as a message store and retains analytics data up to 6hrs.
 
 - Zookeeper - A critical container in Druid cluster. When not available, it becomes a single point of failure for the entire ingestion pipeline. Kafka and druid clusters both depend on Zookeeper for sync and coordination within their respective clusters.
 
@@ -636,7 +751,7 @@ Analytics components:
 
 #### The chart was uninstalled and re-installed
 RabbitMQ credentials are auto-generated on installation, these are bound to the volume that is created and for peer sync. So with re-install, rabbitmq nodes will not be able to connect to the existing volumes. Perform the following steps for rabbitmq to start.
-Note: It is recommended to do a helm upgrade rather than uninstall and install. 
+Note: It is recommended to do a helm upgrade rather than uninstall and install.
 
 1. Remove RabbitMQ Replicas (scale to 0)
 ```
@@ -656,7 +771,7 @@ $ kubectl delete pvc data-rabbitmq-0|1|2
 ```
 $ kubectl scale statefulset rabbitmq --replicas=1|3
 ```
-After the rabbitmq is running, make a note of its credentials as specified above in [Install Chart section - Credentials for Rabbitmq](#install-the-chart) 
+After the rabbitmq is running, make a note of its credentials as specified above in [Install Chart section - Credentials for Rabbitmq](#install-the-chart)
 
 #### Your Kubernetes nodes failed or RabbitMQ crashed.
 If the RabbitMQ cluster is stopped or removed out of order, there is a chance that it will not be restored correctly. Or if sync between rabbitmq peers doesnot happen or set of rabbitmq nodes can never be brought online, then use the 'force boot' option.
